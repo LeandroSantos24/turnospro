@@ -21,3 +21,15 @@ docker-compose up -d
 
 ## Estado
 En desarrollo activo
+
+
+# 1. Levantar la base de datos y Redis
+cd ~/Escritorio/turnospro
+docker-compose up -d
+# 2. Backend
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
+# 3. Frontend (terminal nueva)
+cd ../frontend
+npm run dev
