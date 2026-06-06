@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.routers import auth, clientes, trabajadores
+from app.routers import auth, clientes, trabajadores, servicios
 
 from app.config import settings
 from app.routers import auth, clientes
@@ -88,6 +89,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 app.include_router(auth.router)
 app.include_router(clientes.router)
 app.include_router(trabajadores.router)
+app.include_router(servicios.router)
 
 # ─── Health check ─────────────────────────────────────────────────────────────
 @app.get("/", tags=["health"])
