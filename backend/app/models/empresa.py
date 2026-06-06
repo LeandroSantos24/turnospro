@@ -115,6 +115,7 @@ class Empresa(Base):
     clientes     = relationship("Cliente",     back_populates="empresa")
     trabajadores = relationship("Trabajador",  back_populates="empresa")
     servicios    = relationship("Servicio",    back_populates="empresa")
+    turnos       = relationship("Turno",      back_populates="empresa")
 
     def __repr__(self):
         return f"<Empresa {self.nombre} | Plan: {self.plan}>"
