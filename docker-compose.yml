@@ -1,0 +1,34 @@
+# docker-compose.yml — Servicios de infraestructura local
+# Levanta PostgreSQL y Redis en contenedores Docker.
+# Correr con: docker-compose up -d
+
+services:
+
+  # ─── Base de datos PostgreSQL ─────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: turnospro_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: turnospro_db
+      POSTGRES_USER: turnospro
+      POSTGRES_PASSWORD: turnospro123
+    ports:
+      - "5432:5432"       # Puerto local:puerto del contenedor
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # Datos persisten entre reinicios
+
+  # ─── Redis (cache y cola de tareas) ───────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: turnospro_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+# ─── Volúmenes persistentes ────────────────────────────────
+volumes:
+  postgres_data:
+  redis_data:
