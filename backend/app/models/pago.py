@@ -4,16 +4,10 @@ models/pago.py — Registro de pagos vinculados a turnos.
 Cada turno puede tener uno o más pagos asociados.
 Soporta pagos parciales, múltiples métodos y reembolsos.
 
-Ejemplos:
-  - Turno $5.000: pago único en efectivo → 1 registro
-  - Turno $10.000 + seña de $3.000: seña online + resto presencial → 2 registros
-  - Turno cubierto con gift card parcial: 1 pago GC + 1 pago efectivo → 2 registros
-
 Alimenta el dashboard financiero:
-  - Facturación total del negocio
+  - Facturación bruta, comisiones y neto real en el bolsillo
   - Ingresos por servicio / trabajador
   - Ticket promedio
-  - Descuentos otorgados
   - Métodos de pago más usados
 """
 
@@ -37,72 +31,80 @@ class MetodoPago(str, enum.Enum):
     DEBITO        = "debito"
     CREDITO       = "credito"
     GIFT_CARD     = "gift_card"
-    SUSCRIPCION   = "suscripcion"   # Cubierto por plan de membresía
+    SUSCRIPCION   = "suscripcion"
     OTRO          = "otro"
 
 
 class EstadoPago(str, enum.Enum):
-    PENDIENTE   = "pendiente"    # Registrado pero no confirmado
-    PAGADO      = "pagado"       # Confirmado y recibido
-    PARCIAL     = "parcial"      # Pago parcial (queda saldo pendiente)
-    REEMBOLSADO = "reembolsado"  # Devuelto al cliente
-    FALLIDO     = "fallido"      # Intento de pago que no se completó
-    CANCELADO   = "cancelado"    # Anulado antes de procesarse
+    PENDIENTE   = "pendiente"
+    PAGADO      = "pagado"
+    PARCIAL     = "parcial"
+    REEMBOLSADO = "reembolsado"
+    FALLIDO     = "fallido"
+    CANCELADO   = "cancelado"
 
 
 class Pago(Base):
     __tablename__ = "pagos"
 
     # ─── Identificación ───────────────────────────────────────────────────────
-    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    empresa_id = Column(UUID(as_uuid=True), ForeignKey("empresas.id"),   nullable=False)
-    turno_id   = Column(UUID(as_uuid=True), ForeignKey("turnos.id"),     nullable=False)
-    cliente_id = Column(UUID(as_uuid=True), ForeignKey("clientes.id"),   nullable=False)
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    empresa_id    = Column(UUID(as_uuid=True), ForeignKey("empresas.id"),    nullable=False)
+    turno_id      = Column(UUID(as_uuid=True), ForeignKey("turnos.id"),      nullable=False)
+    cliente_id    = Column(UUID(as_uuid=True), ForeignKey("clientes.id"),    nullable=False)
+    trabajador_id = Column(UUID(as_uuid=True), ForeignKey("trabajadores.id"), nullable=True)
 
-    # ─── Montos ───────────────────────────────────────────────────────────────
-    monto              = Column(Float, nullable=False)
-    monto_descuento    = Column(Float, default=0.0)
-    monto_final        = Column(Float, nullable=False)  # monto - monto_descuento
+    # ─── Montos brutos (lo que paga el cliente) ───────────────────────────────
+    monto           = Column(Float, nullable=False)   # Precio del servicio
+    monto_descuento = Column(Float, default=0.0)       # Descuento aplicado
+    monto_final     = Column(Float, nullable=False)    # monto - monto_descuento
 
-    # ─── Método de pago ───────────────────────────────────────────────────────
+    # ─── Comisión del método de pago (costo del negocio) ─────────────────────
+    # Ejemplo: tarjeta de crédito cobra 9% → el negocio pierde $450 en $5000
+    monto_bruto         = Column(Float, default=0.0)   # = monto_final (alias semántico)
+    comision_porcentaje = Column(Float, default=0.0)   # % vigente al momento del cobro
+    comision_monto      = Column(Float, default=0.0)   # $ que se lleva el método
+    monto_neto          = Column(Float, default=0.0)   # Lo que queda en el bolsillo
+
+    # ─── Facturación ──────────────────────────────────────────────────────────
+    facturado = Column(Boolean, default=False)
+
+    # ─── Método y estado ──────────────────────────────────────────────────────
     metodo = Column(Enum(MetodoPago), nullable=False, default=MetodoPago.EFECTIVO)
     estado = Column(Enum(EstadoPago), nullable=False, default=EstadoPago.PENDIENTE)
 
     # ─── Referencias externas ─────────────────────────────────────────────────
-    # ID de la transacción en MercadoPago, si aplica
-    referencia_mp      = Column(String(100))
-    # URL del comprobante (factura, recibo escaneado, captura de transferencia)
-    comprobante_url    = Column(String(500))
+    referencia_mp   = Column(String(100))
+    comprobante_url = Column(String(500))
 
     # ─── Vínculos con descuentos y gift cards ─────────────────────────────────
-    descuento_id  = Column(UUID(as_uuid=True), ForeignKey("descuentos.id"),  nullable=True)
-    giftcard_id   = Column(UUID(as_uuid=True), ForeignKey("gift_cards.id"),  nullable=True)
+    descuento_id = Column(UUID(as_uuid=True), ForeignKey("descuentos.id"),  nullable=True)
+    giftcard_id  = Column(UUID(as_uuid=True), ForeignKey("gift_cards.id"),  nullable=True)
 
-    # ─── Es seña / pago anticipado? ───────────────────────────────────────────
+    # ─── Seña / pago anticipado ───────────────────────────────────────────────
     es_seña = Column(Boolean, default=False)
 
-    # ─── Notas ────────────────────────────────────────────────────────────────
-    notas = Column(Text)
-
-    # ─── Quién registró el pago ───────────────────────────────────────────────
+    # ─── Notas y registro ─────────────────────────────────────────────────────
+    notas             = Column(Text)
     registrado_por_id = Column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=True)
 
     # ─── Reembolso ────────────────────────────────────────────────────────────
-    reembolsado_at     = Column(DateTime)
-    motivo_reembolso   = Column(Text)
+    reembolsado_at   = Column(DateTime)
+    motivo_reembolso = Column(Text)
 
     # ─── Timestamps ───────────────────────────────────────────────────────────
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # ─── Relaciones ───────────────────────────────────────────────────────────
-    empresa        = relationship("Empresa",   backref="pagos")
-    turno          = relationship("Turno",     back_populates="pagos")
-    cliente        = relationship("Cliente",   backref="pagos")
-    descuento      = relationship("Descuento", backref="pagos")
-    giftcard       = relationship("GiftCard",  backref="pagos")
-    registrado_por = relationship("Usuario",   backref="pagos_registrados",
+    empresa        = relationship("Empresa",    backref="pagos")
+    turno          = relationship("Turno",      back_populates="pagos")
+    cliente        = relationship("Cliente",    backref="pagos")
+    trabajador     = relationship("Trabajador", backref="pagos")
+    descuento      = relationship("Descuento",  backref="pagos")
+    giftcard       = relationship("GiftCard",   backref="pagos")
+    registrado_por = relationship("Usuario",    backref="pagos_registrados",
                                   foreign_keys=[registrado_por_id])
 
     def __repr__(self):
-        return f"<Pago ${self.monto_final} | {self.metodo} | {self.estado}>"
+        return f"<Pago ${self.monto_neto} neto | {self.metodo} | {self.estado}>"
