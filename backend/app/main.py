@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.routers import auth, clientes, trabajadores
 from app.routers import auth, clientes, trabajadores, servicios
+from app.routers import auth, clientes, trabajadores, servicios, turnos
 
 from app.config import settings
 from app.routers import auth, clientes
@@ -90,6 +91,7 @@ app.include_router(auth.router)
 app.include_router(clientes.router)
 app.include_router(trabajadores.router)
 app.include_router(servicios.router)
+app.include_router(turnos.router)
 
 # ─── Health check ─────────────────────────────────────────────────────────────
 @app.get("/", tags=["health"])
