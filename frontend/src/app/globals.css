@@ -1,26 +1,102 @@
 @import "tailwindcss";
+@import "@fontsource/syne/400.css";
+@import "@fontsource/syne/500.css";
+@import "@fontsource/syne/600.css";
+@import "@fontsource/syne/700.css";
+@import "@fontsource/dm-sans/400.css";
+@import "@fontsource/dm-sans/500.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Syne", system-ui, sans-serif;
+
+  /* ── Paleta TurnosPro ── */
+  --color-navy:        #0a0f1e;
+  --color-navy-800:    #111827;
+  --color-navy-700:    #1e2d42;
+  --color-navy-600:    #243447;
+  --color-navy-500:    #2d4060;
+
+  --color-teal:        #00d4aa;
+  --color-teal-light:  #00f5c4;
+  --color-teal-dark:   #00a880;
+  --color-teal-muted:  rgba(0, 212, 170, 0.15);
+
+  --color-bg:          #f8f9fc;
+  --color-surface:     #ffffff;
+  --color-surface-2:   #f1f5f9;
+
+  --color-border:      #e2e8f0;
+  --color-border-2:    #cbd5e1;
+
+  --color-text-1:      #0f172a;
+  --color-text-2:      #475569;
+  --color-text-3:      #94a3b8;
+
+  --color-success:     #10b981;
+  --color-warning:     #f59e0b;
+  --color-danger:      #ef4444;
+  --color-info:        #3b82f6;
+
+  --color-success-bg:  #ecfdf5;
+  --color-warning-bg:  #fffbeb;
+  --color-danger-bg:   #fef2f2;
+  --color-info-bg:     #eff6ff;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text-1);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+/* ── Scrollbar personalizado ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-2);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-3); }
+
+/* ── Animaciones base ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes pulse-teal {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 212, 170, 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(0, 212, 170, 0); }
+}
+
+.animate-fade-in     { animation: fadeIn 0.4s ease both; }
+.animate-slide-left  { animation: slideInLeft 0.3s ease both; }
+
+/* ── Stagger para listas de cards ── */
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 60ms; }
+.stagger > *:nth-child(3) { animation-delay: 120ms; }
+.stagger > *:nth-child(4) { animation-delay: 180ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 300ms; }
